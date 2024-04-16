@@ -1,0 +1,51 @@
+﻿@page "/"
+<h1 class="fs-4"><i class="bi bi-rocket-takeoff"></i>  Project List</h1>
+
+	<div class="container bg-dark bg-opacity-10 border rounded mt-4 mb-4">
+		<EditForm Model="@newProject">
+			<div class="row g-3 align-items-center mt-3">
+				<div class="col-auto row">
+					<div class="col-auto">
+						<label for="project_name" class="col-form-label fw-bold">New Project:</label>
+					</div>
+					<div class="col-auto">
+						<InputText id="project_name" @bind-Value="@newProject.ProjectName" placeholder="Project Name" class="form-control mb-3" />
+					</div>
+				</div>
+				<div class="col-3 position-relative">
+					<button @onclick="() => AddHandler()" class="btn btn-primary btn-sm position-absolute bottom-0 fw-bold">Add new</button>
+				</div>
+			</div>
+		</EditForm>
+	</div>
+
+	<table class="table border">
+		<thead class="table-light">
+			<tr>
+				<th>Project Name</th>
+				<th></th>
+				<th></th>
+				<th></th>
+			</tr>
+		</thead>
+		<tbody class="table-group-divider">
+			@foreach (var project in projects)
+			{
+				<tr>
+					<td>
+						<div>@project.ProjectName</div>
+					</td>
+					<td>
+						<button class="btn btn-primary btn-sm" @onclick="() => GoToTaskListHandler(project)">Go to Task List</button>
+					</td>
+					<td>
+						<button class="btn btn-secondary btn-sm" @onclick="() => EditHandler(project)">Edit</button>
+					</td>
+					<td>
+						<button class="btn btn-danger btn-sm" @onclick="() => DeleteHandler(project)">Delete</button>
+					</td>
+				</tr>
+			}
+		</tbody>
+	</table>
+

@@ -1,0 +1,137 @@
+﻿@page "/JobTaskList/{ProjectId}"
+
+
+<h3 class="fs-4"><i class="bi bi-rocket-takeoff"></i>  Task List</h3>
+
+<div class="container bg-light border rounded mt-3 mb-4 py-2 fs-5">
+	<div class="row">
+		<div class="col-auto fw-bold">Project:</div>
+		<div class="col-auto">@project.ProjectName</div>
+	</div>
+</div>
+
+<div class="mt-3">
+	<button @onclick="() => ReturnPageHandler()" class="btn btn-secondary btn-sm">Return to Project List</button>
+</div>
+
+<div class="container bg-dark bg-opacity-10 border rounded mt-3 mb-4">
+	<EditForm Model="@newJobTask">
+		<div class="row g-3 align-items-center mt-1">
+
+			<div class="col-3">
+				<label for="task_name" class="col-form-label fw-bold m-0 p-0">Task Name:</label>
+				<div>
+					<InputText id="task_name" @bind-Value="@newJobTask.TaskName" placeholder="Task Name" class="form-control form-control-sm mb-3" />
+				</div>
+			</div>
+
+			<div class="col-2">
+				<label for="start_date" class="col-form-label fw-bold m-0 p-0">Start Date:</label>
+				<div>
+					<DateInput TValue="DateOnly" @bind-Value="@StartDateDateonly" Placeholder="Start Date" class="form-control form-control-sm mb-3" />
+				</div>
+			</div>
+
+			<div class="col-2">
+				<label for="end_date" class="form-label fw-bold m-0 p-0">End Date:</label>
+				<div>
+					<DateInput TValue="DateOnly" @bind-Value="@EndDateDateonly" Placeholder="End Date" class="form-control form-control-sm mb-3" />
+				</div>
+			</div>
+
+			<div class="col-2">
+				<label class="form-label fw-bold m-0 p-0">Status</label>
+				<select id="status" @bind="newJobTask.Status" class="form-select form-select-sm mb-3">
+					<option value=0>Not Start</option>
+					<option value=1>In Progress</option>
+					<option value=2>Pending</option>
+					<option value=3>Done</option>
+				</select>
+			</div>
+
+			<div class="col-2">
+				<button @onclick="() => AddHandler()" class="btn btn-primary btn-sm mt-1 fw-bold">Add new</button>
+			</div>
+		</div>
+	</EditForm>
+</div>
+
+<table class="table border">
+	<thead class="table-light">
+		<tr>
+			<th>Task Name</th>
+			<th><button @onclick="() => SortStartDate()" type="button" class="btn btn-link m-0 p-0 text-dark fw-bold">Start Date</button></th>
+			<th><button @onclick="() => SortEndDate()" type="button" class="btn btn-link m-0 p-0 text-dark fw-bold">End Date</button></th>
+			<th><button @onclick="() => SortStatus()" type="button" class="btn btn-link m-0 p-0 text-dark fw-bold">Status</button></th>
+			<th>Members</th>
+			<th></th>
+			<th></th>
+		</tr>
+	</thead>
+	<tbody class="table-group-divider">
+		@foreach (var jobTask in jobTasks)
+		{
+			<tr>
+				<td>@jobTask.TaskName</td>
+				<td>
+					@if (jobTask.StartDate != default(DateTime))
+					{
+						@jobTask.StartDate.ToString("d")
+					}
+				</td>
+				<td>
+					@if (jobTask.EndDate != default(DateTime))
+					{
+						@jobTask.EndDate.ToString("d")
+					}
+				</td>
+					@if (jobTask.Status == 0)
+					{
+					<td class="bg-danger-subtle">
+						<text>Not Start</text>
+						</td>
+					}
+					else if (jobTask.Status == 1)
+					{
+					<td class="bg-success text-white">
+						<text>In Progress</text>
+					</td>
+				}
+					else if (jobTask.Status == 2)
+					{
+					<td class="bg-warning-subtle">
+						<text>Pending</text>
+					</td>
+				}
+					else if (jobTask.Status == 3)
+					{
+					<td class="bg-dark-subtle">
+						<text>Done</text>
+					</td>
+				}
+					else
+					{
+					<td class="bg-primary">
+									@jobTask.Status
+					</td>
+				}
+				<td>
+					<button class="btn btn-primary btn-sm" @onclick="() => MembersHandler(jobTask)">Members</button>
+				</td>
+				<td>
+					<button class="btn btn-secondary btn-sm" @onclick="() => EditHandler(jobTask)">Edit</button>
+				</td>
+				<td>
+					<button class="btn btn-danger btn-sm" @onclick="() => DeleteHandler(jobTask)">Delete</button>
+				</td>
+			</tr>
+		}
+	</tbody>
+</table>
+
+
+
+<div>
+	<button @onclick="() => ReturnPageHandler()" class="btn btn-secondary btn-sm mb-3">Return to Project List</button>
+</div>
+
