@@ -35,6 +35,10 @@ namespace FinalProject.Database
 
 				connection.Execute(sql, member);
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -57,6 +61,10 @@ namespace FinalProject.Database
 				string sql = "SELECT * FROM Member";
 
 				members = connection.Query<Member>(sql).ToList();
+			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
 			}
 			catch (Exception ex)
 			{
@@ -82,6 +90,10 @@ namespace FinalProject.Database
 
 				members = connection.Query<Member>(sql, new { MemberName = memberName + "%" }).ToList();
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -106,6 +118,10 @@ namespace FinalProject.Database
 
 				members = connection.Query<Member>(sql, new { TaskId = taskId }).ToList();
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -117,7 +133,7 @@ namespace FinalProject.Database
 
 			return members;
 		}
-		
+
 		public Member SelectById(string memberId)
 		{
 			Member member = new Member();
@@ -128,6 +144,10 @@ namespace FinalProject.Database
 				string sql = $"SELECT * FROM Member WHERE memberId='{memberId}'";
 
 				member = connection.QuerySingle<Member>(sql);
+			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
 			}
 			catch (Exception ex)
 			{
@@ -151,6 +171,10 @@ namespace FinalProject.Database
 
 				connection.Execute(sql, member);
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -162,28 +186,39 @@ namespace FinalProject.Database
 
 			return Task.CompletedTask;
 		}
-		public Task Delete(Member member)
+		public async Task Delete(Member member)
 		{
-			try
+			await connection.OpenAsync();
+			using (var transaction = await connection.BeginTransactionAsync())
 			{
-				connection.Open();
+				try
+				{
+					// Delete from JobTaskMemberLink table
+					string linkSql = "DELETE FROM JobTaskMemberLink WHERE MemberId = @MemberId";
+					await connection.ExecuteAsync(linkSql, member, transaction: transaction);
 
-				string sql = "DELETE FROM Member WHERE MemberId = @MemberId";
+					// Delete from Member table
+					string memberSql = "DELETE FROM Member WHERE MemberId = @MemberId";
+					await connection.ExecuteAsync(memberSql, member, transaction: transaction);
 
-				connection.Execute(sql, member);
+					await transaction.CommitAsync();
+				}
+				catch (MySqlException ex)
+				{
+					Console.WriteLine("MySQL Error:" + ex.Message);
+					transaction.Rollback();
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine("Error:" + ex.Message);
+					transaction.Rollback();
+				}
+				finally
+				{
+					connection.Close();
+				}
 			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("Error:" + ex.Message);
-			}
-			finally
-			{
-				connection.Close();
-			}
-			return Task.CompletedTask;
+			//return Task.CompletedTask;
 		}
-
-
-
 	}
 }

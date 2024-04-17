@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using FinalProject.Models;
+using MySqlConnector;
 using System.Net;
 
 namespace FinalProject.Database
@@ -38,6 +39,10 @@ namespace FinalProject.Database
 
 				connection.Execute(sql, project);
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -64,6 +69,10 @@ namespace FinalProject.Database
 				string sql = "SELECT * FROM project";
 
 				projects = connection.Query<Project>(sql).ToList();
+			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
 			}
 			catch (Exception ex)
 			{
@@ -93,6 +102,10 @@ namespace FinalProject.Database
 
 				project = connection.QuerySingle<Project>(sql);
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -105,7 +118,8 @@ namespace FinalProject.Database
 			return project;
 		}
 
-		public Task Update(Project project) {
+		public Task Update(Project project)
+		{
 			try
 			{
 				connection.Open();
@@ -113,6 +127,10 @@ namespace FinalProject.Database
 				string sql = "UPDATE Project SET ProjectId=@ProjectId, ProjectName=@ProjectName WHERE ProjectId=@ProjectId";
 
 				connection.Execute(sql, project);
+			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
 			}
 			catch (Exception ex)
 			{
@@ -125,25 +143,40 @@ namespace FinalProject.Database
 
 			return Task.CompletedTask;
 		}
-		public Task Delete(Project project)
+		public async Task Delete(Project project)
 		{
-			try
+			await connection.OpenAsync();
+			using (var transaction = await connection.BeginTransactionAsync())
 			{
-				connection.Open();
+				try
+				{
+					string linkSql = "DELETE FROM JobTaskMemberLink WHERE TaskId in (select TaskId from JobTask  WHERE ProjectId = @ProjectId)";
+					await connection.ExecuteAsync(linkSql, project, transaction: transaction);
 
-				string sql = "DELETE FROM project WHERE ProjectId = @ProjectId";
+					string jobTaskSql = "DELETE FROM JobTask WHERE ProjectId = @ProjectId";
+					await connection.ExecuteAsync(jobTaskSql, project, transaction: transaction);
 
-				connection.Execute(sql, project);
+					string projectSql = "DELETE FROM project WHERE ProjectId = @ProjectId";
+					await connection.ExecuteAsync(projectSql, project, transaction: transaction);
+
+					await transaction.CommitAsync();
+				}
+				catch (MySqlException ex)
+				{
+					Console.WriteLine("MySQL Error:" + ex.Message);
+					transaction.Rollback();
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine("Error:" + ex.Message);
+					transaction.Rollback();
+				}
+				finally
+				{
+					connection.Close();
+				}
 			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("Error:" + ex.Message);
-			}
-			finally
-			{
-				connection.Close();
-			}
-			return Task.CompletedTask;
+			// return Task.CompletedTask;
 		}
 
 

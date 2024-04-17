@@ -13,7 +13,9 @@ namespace FinalProject.Components.Pages
 
 		// for searching
 		private string SearchMemberName { get; set; } = "";
+		// members searched by Name
 		private List<Member> searchMembers = new List<Member>();
+		// members in select option (newmembers = searchMember - taskMember)
 		private List<Member> newmembers = new List<Member>();
 
 		// selected MemberId to add as a new member
@@ -48,7 +50,7 @@ namespace FinalProject.Components.Pages
 			searchMembers = memberService.SearchByName(SearchMemberName);
 			newmembers = new List<Member>(searchMembers);
 
-			// newmembers = searchMembers - taskMember			
+			// newmembers (in select oprion) = searchMembers - taskMember			
 			foreach (Member searchMember in searchMembers)
 			{
 				if (taskMembers.Any(taskMember => searchMember.MemberId == taskMember.MemberId))
@@ -56,12 +58,9 @@ namespace FinalProject.Components.Pages
 					newmembers.Remove(searchMember);
 				}
 			}
-
-
-			//SelectedMemberId = newmembers.First().MemberId;
 		}
 
-		private void SearchMemberHandler() 
+		private void SearchMemberHandler()
 		{
 			searchMembers = memberService.SearchByName(SearchMemberName).Except(taskMembers).ToList();
 			SelectedMemberId = searchMembers.First().MemberId;

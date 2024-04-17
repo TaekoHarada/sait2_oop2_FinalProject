@@ -2,6 +2,7 @@
 using Dapper;
 using FinalProject.Models;
 using System.Net;
+using System.Transactions;
 
 namespace FinalProject.Database
 {
@@ -9,9 +10,12 @@ namespace FinalProject.Database
 	{
 		public override void CreateTable()
 		{
-			connection.Open();
+			try
+			{
 
-			var sql = @"CREATE TABLE IF NOT EXISTS jobtask (
+				connection.Open();
+
+				var sql = @"CREATE TABLE IF NOT EXISTS jobtask (
                 TaskId VARCHAR(36) PRIMARY KEY,
                 TaskName VARCHAR(255) NOT NULL,
                 StartDate DATETIME,
@@ -21,10 +25,20 @@ namespace FinalProject.Database
 				    CONSTRAINT T_ProjectId_FK FOREIGN KEY (ProjectId) REFERENCES Project(ProjectId)
             )";
 
-			connection.Execute(sql);
-
-			connection.Close();
-
+				connection.Execute(sql);
+			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine("Error:" + ex.Message);
+			}
+			finally
+			{
+				connection.Close();
+			}
 		}
 
 		public Task Insert(JobTask jobTask)
@@ -36,6 +50,10 @@ namespace FinalProject.Database
 				string sql = "INSERT INTO JobTask (TaskId, TaskName, StartDate, EndDate, Status, ProjectId) VALUES (@TaskId, @TaskName, @StartDate, @EndDate, @Status, @ProjectId)";
 
 				connection.Execute(sql, jobTask);
+			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
 			}
 			catch (Exception ex)
 			{
@@ -59,6 +77,10 @@ namespace FinalProject.Database
 				string sql = "SELECT * FROM JobTask";
 
 				jobTasks = connection.Query<JobTask>(sql).ToList();
+			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
 			}
 			catch (Exception ex)
 			{
@@ -84,6 +106,10 @@ namespace FinalProject.Database
 
 				jobTasks = connection.Query<JobTask>(sql, new { ProjectId = projectId }).ToList();
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -107,6 +133,10 @@ namespace FinalProject.Database
 
 				jobTask = connection.QuerySingle<JobTask>(sql);
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -129,6 +159,10 @@ namespace FinalProject.Database
 
 				connection.Execute(sql, jobTask);
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -140,29 +174,41 @@ namespace FinalProject.Database
 
 			return Task.CompletedTask;
 		}
-		public Task Delete(JobTask jobTask)
+		public async Task Delete(JobTask jobTask)
 		{
-			try
+			await connection.OpenAsync();
+			using (var transaction = await connection.BeginTransactionAsync())
 			{
-				connection.Open();
+				try
+				{
+					// Delete from JobTaskMemberLink table
+					string linkSql = "DELETE FROM JobTaskMemberLink WHERE TaskId = @TaskId";
+					await connection.ExecuteAsync(linkSql, jobTask, transaction: transaction);
 
-				string sql = "DELETE FROM JobTask WHERE TaskId = @TaskId";
+					// Delete from JobTask table
+					string sql = "DELETE FROM JobTask WHERE TaskId = @TaskId";
+					await connection.ExecuteAsync(sql, jobTask, transaction: transaction);
 
-				connection.Execute(sql, jobTask);
+					await transaction.CommitAsync();
+
+				}
+				catch (MySqlException ex)
+				{
+					Console.WriteLine("MySQL Error:" + ex.Message);
+					transaction.Rollback();
+				}
+				catch (Exception ex)
+				{
+					Console.WriteLine("Error:" + ex.Message);
+					transaction.Rollback();
+				}
+				finally
+				{
+					connection.Close();
+				}
 			}
-			catch (Exception ex)
-			{
-				Console.WriteLine("Error:" + ex.Message);
-			}
-			finally
-			{
-				connection.Close();
-			}
-			return Task.CompletedTask;
+			//return Task.CompletedTask;
 		}
-
-
-
 
 	}
 }

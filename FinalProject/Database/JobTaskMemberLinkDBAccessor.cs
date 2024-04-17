@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using FinalProject.Models;
+using MySqlConnector;
 
 namespace FinalProject.Database
 {
@@ -33,6 +34,10 @@ namespace FinalProject.Database
 
 				connection.Execute(sql, jobTaskMemberLink);
 			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
+			}
 			catch (Exception ex)
 			{
 				Console.WriteLine("Error:" + ex.Message);
@@ -55,6 +60,10 @@ namespace FinalProject.Database
 				string sql = "DELETE FROM JobTaskMemberLink WHERE TaskId = @TaskId AND  MemberId = @MemberId";
 
 				connection.Execute(sql, jobTaskMemberLink);
+			}
+			catch (MySqlException ex)
+			{
+				Console.WriteLine("MySQL Error:" + ex.Message);
 			}
 			catch (Exception ex)
 			{
