@@ -62,8 +62,18 @@ namespace FinalProject.Components.Pages
 
 		private void SearchMemberHandler()
 		{
-			searchMembers = memberService.SearchByName(SearchMemberName).Except(taskMembers).ToList();
-			SelectedMemberId = searchMembers.First().MemberId;
+			searchMembers = memberService.SearchByName(SearchMemberName);
+			newmembers = new List<Member>(searchMembers);
+
+			// newmembers (in select oprion) = searchMembers - taskMember			
+			foreach (Member searchMember in searchMembers)
+			{
+				if (taskMembers.Any(taskMember => searchMember.MemberId == taskMember.MemberId))
+				{
+					newmembers.Remove(searchMember);
+				}
+			}
+			//SelectedMemberId = newmembers.First().MemberId;
 		}
 
 		private void AddMemberToTaskHandler()
